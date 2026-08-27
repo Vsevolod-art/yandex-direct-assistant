@@ -8,7 +8,21 @@ from pathlib import Path
 import yaml
 from dotenv import load_dotenv
 
-ROOT = Path(__file__).resolve().parent.parent
+def _find_root() -> Path:
+    """Корень проекта.
+
+    Раскладка может быть двух видов: код в подпапке src/ (как в репозитории)
+    либо всё вповалку в одной папке (так получается при загрузке файлов
+    через веб-интерфейс GitHub). Ориентируемся на config.yaml.
+    """
+    here = Path(__file__).resolve().parent
+    for candidate in (here.parent, here):
+        if (candidate / "config.yaml").exists():
+            return candidate
+    return here.parent
+
+
+ROOT = _find_root()
 load_dotenv(ROOT / ".env")
 
 
@@ -50,7 +64,8 @@ def load_settings(config_path: Path | None = None) -> Settings:
     if not direct_token:
         raise ConfigError(
             "Не задан DIRECT_TOKEN. Это OAuth-токен Яндекс Директа — "
-            "добавь его в переменные окружения Render (или в файл .env локально)."
+            "впиши его в файл .env рядом с проектом (или в переменные окружения, "
+            "если запускаешь в облаке)."
         )
 
     mode = _env("MODE", "dry-run").lower()

@@ -40,6 +40,18 @@ fi
 
 cd "$DIR"
 
+# Раскладка репозитория может отличаться: код бывает в src/, а бывает
+# вповалку в корне — так получается при загрузке файлов через веб-интерфейс.
+if [ -f "$DIR/src/main.py" ]; then
+  ENTRY="src/main.py"
+elif [ -f "$DIR/main.py" ]; then
+  ENTRY="main.py"
+else
+  echo "ОШИБКА: в репозитории не найден main.py. Проверь, что файлы залиты полностью."
+  exit 1
+fi
+echo "      Точка входа: $ENTRY"
+
 # --- Окружение ---
 echo "[3/6] Создаю окружение..."
 [ -d .venv ] || python3 -m venv .venv
@@ -55,7 +67,32 @@ echo "      Зависимости готовы."
 # --- Файл с токенами ---
 echo "[4/6] Готовлю файл настроек..."
 if [ ! -f .env ]; then
-  cp .env.example .env
+  if [ -f .env.example ]; then
+    cp .env.example .env
+  else
+    # Файлы, начинающиеся с точки, GitHub при веб-загрузке пропускает,
+    # поэтому держим шаблон прямо здесь.
+    cat > .env <<'ENVEOF'
+# ---- Яндекс Директ ----
+DIRECT_TOKEN=
+# Заполнять ТОЛЬКО для агентского аккаунта, иначе оставь пустым:
+DIRECT_CLIENT_LOGIN=
+
+# ---- Яндекс Метрика ----
+METRIKA_TOKEN=
+METRIKA_COUNTER_ID=
+METRIKA_GOAL_IDS=
+
+# ---- Режим ----
+# dry-run = только отчёт, ничего не менять в Директе
+# apply   = ещё и записывать запрещённые площадки
+MODE=dry-run
+
+# ---- Телеграм ----
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+ENVEOF
+  fi
   chmod 600 .env          # читать может только root
   echo "      Создан .env — токены впишешь следующим шагом."
 else
@@ -65,12 +102,12 @@ fi
 
 # --- Обёртка ---
 echo "[5/6] Настраиваю запуск..."
-cat > "$DIR/run.sh" <<'WRAPPER'
+cat > "$DIR/run.sh" <<WRAPPER
 #!/bin/bash
-cd /opt/direct-assistant
-echo "=== Запуск $(date '+%Y-%m-%d %H:%M:%S') ==="
-./.venv/bin/python src/main.py
-echo "=== Код завершения: $? ==="
+cd "$DIR"
+echo "=== Запуск \$(date '+%Y-%m-%d %H:%M:%S') ==="
+./.venv/bin/python $ENTRY
+echo "=== Код завершения: \$? ==="
 WRAPPER
 chmod +x "$DIR/run.sh"
 touch "$LOG"

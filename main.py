@@ -10,12 +10,13 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from config import ConfigError, load_settings  # noqa: E402
+from config import ROOT, ConfigError, load_settings  # noqa: E402
 from direct_api import DirectApiError, DirectClient  # noqa: E402
 from metrika_api import MetrikaApiError, MetrikaClient  # noqa: E402
 from notify import send_telegram  # noqa: E402
@@ -29,7 +30,8 @@ logging.basicConfig(
 )
 log = logging.getLogger("assistant")
 
-OUT_DIR = Path(__file__).resolve().parent.parent / "out"
+# В Cloud Functions файловая система только для чтения, писать можно лишь в /tmp.
+OUT_DIR = Path(os.getenv("OUT_DIR") or (ROOT / "out"))
 
 
 def main() -> int:
