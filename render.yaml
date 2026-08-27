@@ -1,0 +1,32 @@
+# Blueprint для Render. Создаёт cron job, который раз в неделю
+# анализирует площадки и присылает отчёт.
+services:
+  - type: cronjob
+    name: yandex-direct-assistant
+    runtime: python
+    plan: starter
+    # Каждый понедельник в 06:00 UTC = 09:00 по Москве.
+    schedule: "0 6 * * 1"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/main.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # sync: false = значение вводится вручную в панели Render
+      # и не попадает в репозиторий. Так токены не утекают в git.
+      - key: DIRECT_TOKEN
+        sync: false
+      - key: DIRECT_CLIENT_LOGIN
+        sync: false
+      - key: METRIKA_TOKEN
+        sync: false
+      - key: METRIKA_COUNTER_ID
+        sync: false
+      - key: METRIKA_GOAL_IDS
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: MODE
+        value: dry-run
